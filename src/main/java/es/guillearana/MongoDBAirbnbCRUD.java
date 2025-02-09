@@ -26,14 +26,15 @@ public class MongoDBAirbnbCRUD {
         System.out.println("Nuevo alojamiento insertado: " + listing.toJson());
     }
 
-    public Document findListing(int maxPrice, int minBedrooms) {
-        Document foundListing = collection.find(Filters.and(
-                Filters.lte("price", maxPrice),
-                Filters.gte("bedrooms", minBedrooms)
-        )).first();
+    public List<Document> findListingCiudad(String city) {
+        List<Document> listings = collection.find(Filters.eq("address.market", city)).into(new java.util.ArrayList<>());
         System.out.println("--- Leer (Consultar) ---");
-        System.out.println(foundListing != null ? foundListing.toJson() : "No se encontraron alojamientos.");
-        return foundListing;
+        if (listings.isEmpty()) {
+            System.out.println("No se encontraron alojamientos en " + city);
+        } else {
+            listings.forEach(listing -> System.out.println(listing.toJson()));
+        }
+        return listings;
     }
 
     public void updateListingPrice(Object id, int newPrice) {
@@ -62,11 +63,12 @@ public class MongoDBAirbnbCRUD {
                 .append("neighborhood_overview", "Ubicación céntrica con buenas conexiones");
         crud.insertListing(newListing);
 
-        Document foundListing = crud.findListing(100, 1);
+        List<Document> foundListings = crud.findListingCiudad("Vitoria-Gasteiz");
 
-        if (foundListing != null) {
-            crud.updateListingPrice(foundListing.get("_id"), 90);
-            crud.deleteListing(foundListing.get("_id"));
+        if (!foundListings.isEmpty()) {
+            Document firstListing = foundListings.get(0);
+            crud.updateListingPrice(firstListing.get("_id"), 90);
+            crud.deleteListing(firstListing.get("_id"));
         }
 
         crud.close();
